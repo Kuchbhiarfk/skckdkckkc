@@ -13,10 +13,10 @@ from collections import defaultdict
 from urllib.parse import quote
 
 # ==== Config (Use Environment Vars) ====
-API_HASH="2daa157943cb2d76d149c4de0b036a99"
-API_ID=23713783
-BOT_TOKEN = "7619023501:AAGBgYZs84QQKSlo0DFl_LULPe--_LHQ2UQ"
-CHANNEL_ID = -1003132883596       # <-- Sirf Channel ID daal (koi link nahi)
+API_ID = int(os.getenv('API_ID'))
+API_HASH = os.getenv('API_HASH')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
 BOT_USERNAME = "Schedulesfbot"
 DECRYPT_URL_BASE = "https://dekhosekdop.onrender.com/op?data="
 
@@ -24,10 +24,10 @@ DECRYPT_URL_BASE = "https://dekhosekdop.onrender.com/op?data="
 ENCRYPTION_KEY = bytes.fromhex('0123456789abcdef0123456789abcdef')
 IV = b'abcdef9876543210'
 
-# ==== App ====
-app = Client("bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# ==== Bot Client (Global) ====
+bot = Client("bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
-# States
+# States (Global)
 user_states = {}
 user_temp_data = {}
 
@@ -197,7 +197,7 @@ async def generate_html_from_json(client: Client, original_msg, batch_title: str
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{batch_title} — UI Clone</title>
+  <title>{batch_title} — UI clone</title>
   <meta name="description" content="An advanced UI clone of a {batch_title.lower()} catalog with glassmorphism and light/dark mode.">
   <style>
     /* Paste your full CSS here */
@@ -257,10 +257,6 @@ async def generate_html_from_json(client: Client, original_msg, batch_title: str
 
 # ==== Upload HTML Function ====
 async def upload_html(client: Client, html_content: str, batch_title: str, chat_id: int) -> 'Message':
-    """
-    Upload HTML content as a .html file to the specified chat.
-    Returns the sent message object.
-    """
     temp_filename = f"{batch_title.replace(' ', '_').lower()}_{uuid4().hex}.html"
     with open(temp_filename, 'w', encoding='utf-8') as f:
         f.write(html_content)
@@ -278,7 +274,7 @@ async def upload_html(client: Client, html_content: str, batch_title: str, chat_
     
     return sent_msg
 
-# ==== Download & Encrypt Function (Keep for other features) ====
+# ==== Download & Encrypt (Keep for other features) ====
 async def download_and_encrypt_json(client: Client, msg, user_first_name: str, user_id: str, made_at: str) -> tuple[str, str]:
     if not msg.document or not msg.document.file_name.endswith('.json'):
         raise ValueError("Message does not contain a .json file")
@@ -309,7 +305,7 @@ async def download_and_encrypt_json(client: Client, msg, user_first_name: str, u
         except Exception as e:
             print(f"Failed to delete temporary file {path}: {e}")
 
-# ==== Upload Encrypted JSON (Keep) ====
+# ==== Upload Encrypted JSON ====
 async def upload_encrypted_json(client: Client, encrypted_json: str, filename: str, chat_id: int) -> 'Message':
     temp_filename = f"encrypted_{uuid4().hex}.json"
     with open(temp_filename, 'w', encoding='utf-8') as f:
@@ -328,7 +324,7 @@ async def upload_encrypted_json(client: Client, encrypted_json: str, filename: s
     
     return sent_msg
 
-# ==== Other Functions (Keep) ====
+# ==== Force Sub Functions ====
 async def get_permanent_link():
     global PERMANENT_INVITE_LINK
     if PERMANENT_INVITE_LINK:
@@ -337,7 +333,7 @@ async def get_permanent_link():
     
     try:
         print(f"🔗 Generating permanent invite for main channel {CHANNEL_ID}...")
-        link = await app.export_chat_invite_link(CHANNEL_ID)
+        link = await bot.export_chat_invite_link(CHANNEL_ID)
         PERMANENT_INVITE_LINK = link
         print(f"✅ Permanent Link: {link}")
         return link
@@ -348,7 +344,7 @@ async def get_permanent_link():
 async def is_member(user_id):
     try:
         print(f"🔍 Force sub check: User {user_id} in {CHANNEL_ID}...")
-        member = await app.get_chat_member(CHANNEL_ID, user_id)
+        member = await bot.get_chat_member(CHANNEL_ID, user_id)
         status = member.status
         print(f"✅ Force sub status: {status}")
         return status in [ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
@@ -359,7 +355,7 @@ async def is_member(user_id):
 async def is_bot_admin_in_channel(target_channel_id):
     try:
         print(f"🔍 Bot admin check in target {target_channel_id}...")
-        bot_member = await app.get_chat_member(target_channel_id, "me")
+        bot_member = await bot.get_chat_member(target_channel_id, "me")
         status = bot_member.status
         print(f"✅ Bot admin status: {status}")
         return status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
@@ -367,36 +363,27 @@ async def is_bot_admin_in_channel(target_channel_id):
         print(f"❌ Bot admin error: {e}")
         return False
 
-# ==== /genlink Handler ====
+# ==== Handlers ====
 @app.on_message(filters.command("genlink"))
 async def genlink_start(client, message):
-    print(f"🔧 /genlink HANDLER TRIGGERED by {message.from_user.id}")
     user_id = message.from_user.id
     user_states[user_id] = {'step': 'waiting_channel'}
     await message.reply_text("Send **channel ID** (e.g., -1001234567890):")
-    print("🔧 /genlink response sent")
 
-# ==== /dec Handler ====
 @app.on_message(filters.command("dec"))
 async def dec_start(client, message):
-    print(f"🔓 /dec HANDLER TRIGGERED by {message.from_user.id}")
     user_id = message.from_user.id
     user_states[user_id] = {'step': 'waiting_dec_json'}
     await message.reply_text("Send your **encrypted JSON file** (.json):")
-    print("🔓 /dec response sent")
 
-# ==== Text Handler ====
 @app.on_message(filters.text)
 async def handle_text_step(client, message):
     user_id = message.from_user.id
-    print(f"📝 Text Handler TRIGGERED: '{message.text}' from {user_id}")
     if user_id not in user_states:
-        print(f"📝 No state for {user_id} - ignoring")
         return
 
     state = user_states[user_id]
     text = message.text.strip()
-    print(f"📝 Step: {state['step']}, Input: '{text}'")
 
     if state['step'] == 'waiting_channel':
         try:
@@ -405,10 +392,8 @@ async def handle_text_step(client, message):
                 raise ValueError("Negative only!")
             state['channel_id'] = channel_id
             state['step'] = 'waiting_msg'
-            print(f"✅ Channel OK: {channel_id}")
             await message.reply_text(f"Channel: {channel_id}\nSend **msg ID** (e.g., 123):")
-        except ValueError as ve:
-            print(f"❌ Bad channel: {ve}")
+        except ValueError:
             await message.reply_text("Invalid channel ID! Negative integer.")
 
     elif state['step'] == 'waiting_msg':
@@ -419,55 +404,38 @@ async def handle_text_step(client, message):
             param = f"OP_{state['channel_id']}_{msg_id}"
             url = f"https://t.me/{BOT_USERNAME}?start={param}"
             del user_states[user_id]
-            print(f"✅ Genlink: '{param}' → '{url}'")
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🧪 Test Link", url=url)]])
-            await message.reply_text(f"✅ Link: `{url}`\n\nTest button click karo!", reply_markup=keyboard, parse_mode="Markdown")
-            print("📤 Genlink URL sent")
-        except ValueError as ve:
-            print(f"❌ Bad msg ID: {ve}")
+            await message.reply_text(f"✅ Link: `{url}`", reply_markup=keyboard, parse_mode="Markdown")
+        except ValueError:
             await message.reply_text("Invalid msg ID! Positive integer.")
 
     elif state['step'] == 'waiting_batch_title':
         state['batch_title'] = text
         state['step'] = 'waiting_batch_thumbnail'
-        print(f"✅ Batch title: {text}")
-        await message.reply_text(f"Batch title set: {text}\nNow enter **batch thumbnail URL** (e.g., 'https://example.com/image.jpg'):")
-        print("📤 Waiting for thumbnail")
+        await message.reply_text(f"Batch title set: {text}\nNow enter **batch thumbnail URL**:")
+        print(f"Batch title: {text}")
 
     elif state['step'] == 'waiting_batch_thumbnail':
         state['batch_thumbnail'] = text
-        print(f"✅ Batch thumbnail: {text}")
-        # Generate HTML
         original_msg = user_temp_data[user_id]['original_msg']
-        full_html = await generate_html_from_json(app, original_msg, state['batch_title'], state['batch_thumbnail'])
-        sent_msg = await upload_html(app, full_html, state['batch_title'], user_id)
-        await message.reply_text(f"✅ HTML Catalog generated and uploaded! ID: {sent_msg.id}\nOpen in browser for interactive view! 🚀")
-        print("📤 HTML catalog sent")
-
-        # Clean state and temp data
+        full_html = await generate_html_from_json(bot, original_msg, state['batch_title'], state['batch_thumbnail'])
+        sent_msg = await upload_html(bot, full_html, state['batch_title'], user_id)
+        await message.reply_text(f"✅ HTML Catalog generated! ID: {sent_msg.id}")
         del user_states[user_id]
         del user_temp_data[user_id]
+        print(f"Batch thumbnail: {text}")
 
-# ==== Document Handler ====
 @app.on_message(filters.document)
 async def handle_decrypt_step(client, message):
     user_id = message.from_user.id
-    print(f"🔓 Document Handler TRIGGERED from {user_id}")
     if user_id not in user_states or user_states[user_id].get('step') != 'waiting_dec_json':
-        print(f"🔓 No decrypt state for {user_id} - ignoring")
         return
-
     try:
-        print(f"🔓 Processing encrypted JSON from {user_id}")
-        decrypted_json, orig_filename = await download_and_decrypt_json(app, message)
-        sent_msg = await upload_decrypted_json(app, decrypted_json, orig_filename, user_id)
-        await message.reply_text(f"✅ Decrypted JSON uploaded! Check above. 😁 ID: {sent_msg.id}")
-        print("🔓 Decrypt success sent")
-
-        # Clean state
+        decrypted_json, orig_filename = await download_and_decrypt_json(bot, message)
+        sent_msg = await upload_decrypted_json(bot, decrypted_json, orig_filename, user_id)
+        await message.reply_text(f"✅ Decrypted JSON uploaded! ID: {sent_msg.id}")
         del user_states[user_id]
     except Exception as e:
-        print(f"🔓 Decrypt error: {e}")
         await message.reply_text(f"❌ Decrypt failed: {str(e)}")
 
 # ==== Upload Decrypted JSON ====
@@ -475,88 +443,17 @@ async def upload_decrypted_json(client: Client, decrypted_json: str, filename: s
     temp_filename = f"decrypted_{uuid4().hex}.json"
     with open(temp_filename, 'w', encoding='utf-8') as f:
         f.write(decrypted_json)
-    
     sent_msg = await client.send_document(
         chat_id=chat_id,
         document=temp_filename,
         caption=f"Decrypted JSON: {filename}"
     )
-    
-    try:
-        os.remove(temp_filename)
-    except Exception as e:
-        print(f"Failed to delete temporary file {temp_filename}: {e}")
-    
+    os.remove(temp_filename)
     return sent_msg
 
-# ==== Manual Test ====
-@app.on_message(filters.command("testcopy"))
-async def test_copy(client, message):
-    print(f"🧪 /testcopy TRIGGERED by {message.from_user.id}")
-    try:
-        parts = message.text.split()[1:]
-        if len(parts) != 2:
-            await message.reply_text("Use: /testcopy <ch_id> <msg_id>")
-            return
-        ch_id = int(parts[0])
-        msg_id = int(parts[1])
-        print(f"🧪 Params: {ch_id}, {msg_id}")
-
-        if not await is_bot_admin_in_channel(ch_id):
-            await message.reply_text("❌ Bot not admin!")
-            return
-
-        # Check if JSON
-        original_msg = await app.get_messages(ch_id, msg_id)
-        if original_msg is None:
-            await message.reply_text("❌ Cannot access the message. Check permissions in the topic.")
-            return
-
-        user = message.from_user
-        first_name = user.first_name or "Buddy"
-        if original_msg.document and original_msg.document.file_name and original_msg.document.file_name.endswith('.json'):
-            print("🧪 JSON Detected → HTML Gen Mode (Test)")
-            # For test, ask for title and thumbnail
-            user_temp_data[user.id] = {'original_msg': original_msg}
-            user_states[user.id] = {'step': 'waiting_batch_title'}
-            await message.reply_text(f"JSON detected! Enter **batch title** for test:")
-        else:
-            try:
-                copied = await app.copy_message(user.id, ch_id, msg_id)
-                if copied is None:
-                    await message.reply_text("❌ Cannot copy the message. Check permissions in the topic.")
-                    return
-                await message.reply_text(f"✅ Test copy: {copied.id}")
-            except Exception as copy_e:
-                print(f"❌ Copy error: {copy_e}")
-                await message.reply_text(f"❌ Cannot copy the message. It may be empty or inaccessible in the topic. Check bot permissions.")
-        print("🧪 Test success")
-    except Exception as e:
-        print(f"🧪 Test error: {e}")
-        await message.reply_text(f"❌ Test fail: {str(e)}")
-
-# ==== Status ====
-@app.on_message(filters.command("status"))
-async def status_handler(client, message):
-    print(f"🔍 /status TRIGGERED by {message.from_user.id}")
-    joined = await is_member(message.from_user.id)
-    status = "✅ Joined!" if joined else "❌ Not Joined!"
-    await message.reply_text(f"Status: {status}\nID: {message.from_user.id}")
-
-# ==== Ping ====
-@app.on_message(filters.command("ping"))
-async def ping(client, message):
-    print(f"🏓 /ping TRIGGERED by {message.from_user.id}")
-    await message.reply_text("🏓 Pong! Bot alive.")
-    print("🏓 Pong sent")
-
-# ==== General Log ====
-@app.on_message()
-async def log_all_messages(client, message):
-    print(f"🌐 GENERAL LOG: From {message.from_user.id if message.from_user else 'Unknown'} | Text: '{message.text[:50]}...' | Chat: {message.chat.id if message.chat else 'None'}")
-
-# ==== Run Bot ====
+# ==== Run Bot (Fixed — Global bot) ====
 async def run_bot():
+    global bot
     await bot.start()
     print("🚀 Bot is running...")
     await bot.idle()
