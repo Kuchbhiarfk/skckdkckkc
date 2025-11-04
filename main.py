@@ -555,7 +555,11 @@ async def ping(client, message):
 async def log_all_messages(client, message):
     print(f"🌐 GENERAL LOG: From {message.from_user.id if message.from_user else 'Unknown'} | Text: '{message.text[:50]}...' | Chat: {message.chat.id if message.chat else 'None'}")
 
-# ==== Start Bot ====
-if __name__ == "__main__":
-    print("🚀 Bot Starting...")
-    app.run()
+# ==== Run Bot ====
+async def run_bot():
+    await bot.start()
+    print("🚀 Bot is running...")
+    await bot.idle()
+
+if __name__ == '__main__':
+    asyncio.run(run_bot())
