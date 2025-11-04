@@ -456,7 +456,10 @@ async def run_bot():
     global bot
     await bot.start()
     print("🚀 Bot is running...")
-    await bot.idle()
+    await asyncio.Event().wait()  # <-- FIXED: Idle loop without 'idle()'
+
+if __name__ == '__main__':
+    asyncio.run(run_bot())
 
 if __name__ == '__main__':
     asyncio.run(run_bot())
