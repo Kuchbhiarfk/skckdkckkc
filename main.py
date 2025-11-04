@@ -364,19 +364,19 @@ async def is_bot_admin_in_channel(target_channel_id):
         return False
 
 # ==== Handlers ====
-@app.on_message(filters.command("genlink"))
+@bot.on_message(filters.command("genlink"))
 async def genlink_start(client, message):
     user_id = message.from_user.id
     user_states[user_id] = {'step': 'waiting_channel'}
     await message.reply_text("Send **channel ID** (e.g., -1001234567890):")
 
-@app.on_message(filters.command("dec"))
+@bot.on_message(filters.command("dec"))
 async def dec_start(client, message):
     user_id = message.from_user.id
     user_states[user_id] = {'step': 'waiting_dec_json'}
     await message.reply_text("Send your **encrypted JSON file** (.json):")
 
-@app.on_message(filters.text)
+@bot.on_message(filters.text)
 async def handle_text_step(client, message):
     user_id = message.from_user.id
     if user_id not in user_states:
@@ -425,7 +425,7 @@ async def handle_text_step(client, message):
         del user_temp_data[user_id]
         print(f"Batch thumbnail: {text}")
 
-@app.on_message(filters.document)
+@bot.on_message(filters.document)
 async def handle_decrypt_step(client, message):
     user_id = message.from_user.id
     if user_id not in user_states or user_states[user_id].get('step') != 'waiting_dec_json':
