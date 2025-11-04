@@ -1,4 +1,4 @@
-pyrofork==2.0.106
+pyrofork
 pycryptodome==3.20.0
 Flask==1.1.2
 gunicorn==20.1.0
