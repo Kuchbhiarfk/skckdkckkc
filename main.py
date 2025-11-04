@@ -13,10 +13,10 @@ from collections import defaultdict
 from urllib.parse import quote
 
 # ==== Config (Use Environment Vars) ====
-API_ID = int(os.getenv('API_ID'))
-API_HASH = os.getenv('API_HASH')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
-CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
+API_HASH="2daa157943cb2d76d149c4de0b036a99"
+API_ID=23713783
+BOT_TOKEN = "7619023501:AAGBgYZs84QQKSlo0DFl_LULPe--_LHQ2UQ"
+CHANNEL_ID = -1003132883596       # <-- Sirf Channel ID daal (koi link nahi)
 BOT_USERNAME = "Schedulesfbot"
 DECRYPT_URL_BASE = "https://dekhosekdop.onrender.com/op?data="
 
